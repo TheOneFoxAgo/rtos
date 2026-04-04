@@ -1,41 +1,24 @@
-/****************************************/
-/*               sys.h                   /          
-/****************************************/
+#ifndef SYS_H
+#define SYS_H
 
-#include "defs.h"
+#include <stdnoreturn.h>
+// Общие функции нашей OS, которые не входят во внешее api.
 
-#define INSERT_TO_TAIL 1
-#define INSERT_TO_HEAD 0
+// Запустить планировщик. Запустите больше одного раза - всё сломается.
+void StartScheduler(void);
 
-typedef struct Type_Task
-{
-	int ref;
-	int priority;
-	int ceiling_priority;
-	void (*entry)(void);
-	char* name;
+// Выключить планировщик. Эта функция - волшебная. Запустите её,
+// и моментально окажетесь на строчке сразу после StartScheduler.
+noreturn void ShutDownScheduler(void);
 
-} TTask;
+// "Отпустить" процессор, чтобы можно было выполнять другие задачи.
+// Вызывайте, когда планируете ждать чего либо. Управление к вам
+// когда-нибудь вернётся (Если дедлоков не будет, а их не будет).
+// Типичный юзкейс: while(условие) yield();
+// Эта функция тоже волшебная.
+void yield(void);
 
-typedef struct Type_resource
-{
-	int task;
-	int priority;
-	char* name;
+// Местная функция логирования.
+int Log(const char* format, ...);
 
-} TResource;
-
-extern TTask TaskQueue[MAX_TASK];
-
-extern TResource ResourceQueue[MAX_RES];
-
-extern int RunningTask;
-
-extern int FreeTask;
-
-extern int FreeResource;
-
-void Schedule(int task,int mode);
-
-void Dispatch(int task);
-
+#endif
