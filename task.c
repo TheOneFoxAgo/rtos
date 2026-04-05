@@ -105,7 +105,7 @@ void StartScheduler(void) {
           Log("Starting task: %s\n", CurrentTask->name);
           CurrentTask->status = TASK_REENTER;
           CurrentTask->stack = malloc(STACK_SIZE);
-          StackSwitch(CurrentTask->stack + STACK_SIZE, CurrentTask->body);
+          StackSwitch(CurrentTask->stack + STACK_SIZE - 1, CurrentTask->body);
         } else {
           Log("Reentering task: %s\n", CurrentTask->name);
           longjmp(CurrentTask->ctx, 1); // Число ни на что не влияет.
