@@ -4,13 +4,22 @@
 #include <unistd.h> // Функция sleep. Чисто для примера.
 #include <stdio.h>
 
+DeclareTask(Sample);
 DeclareTask(Counter);
 DeclareTask(Killer);
 
+DeclareEvent(ShuttingDown);
+
 int main(void)
 {
-	StartOS(Counter);
+	StartOS(Sample);
 	return 0;
+}
+
+TASK(Sample, 2) {
+	ActivateTask(Counter);
+	ActivateTask(Killer);
+	TerminateTask();
 }
 
 TASK(Counter, 1) {
@@ -23,10 +32,11 @@ TASK(Counter, 1) {
 		yield();
 		counter += 1;
 	}
-	ActivateTask(Killer);
+	SetEvent(Killer, ShuttingDown);
 	TerminateTask(); // Не забывайте в конце каждой таски.
 }
 
 TASK(Killer, 3) {
+	WaitEvent(ShuttingDown);
 	ShutdownOS(); // Ну это исключение. После Shutdown можно таску и не завершать.
 }

@@ -9,7 +9,8 @@
 #include "sys.h"
 // Кишки планировщика задач. Тут треш и угар.
 
-static TTask CurrentTask;                 // Исполняемая в данный момент задача
+extern TTask CurrentTask;                 // Исполняемая в данный момент задача
+
 static size_t CurrentPriority;            // Приоритет исполняемой задачи
 static jmp_buf Scheduler;                 // Контекст планировщика.
 static TTask TasksHeads[MAX_PRIORITIES];  // Массив начал списков задач.

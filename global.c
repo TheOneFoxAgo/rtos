@@ -5,8 +5,6 @@
 // Сейчас в нём, закономерно, находится только наследие
 // windows_rtos.
 
-#include "sys.h"
+#include "data.h"
 
-TResource ResourceQueue[MAX_RES];
-
-int FreeResource;
+TTask CurrentTask;
