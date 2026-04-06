@@ -14,7 +14,7 @@
 #define MAX_EVENTS 16
 // Размер стэка задачи.
 // Нельзя выделять слишком маленький, ато сегфолт
-#define STACK_SIZE 2000
+#define STACK_SIZE 2500
 // Пустая маска события
 #define EMPTY_MASK 0
 

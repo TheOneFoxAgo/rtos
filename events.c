@@ -4,8 +4,6 @@
 #include "rtos_api.h"
 #include "sys.h"
 
-extern TTask CurrentTask;
-
 TEventMask __GenNewEventMask()
 {
   static int eventCounter = 0;
@@ -41,7 +39,7 @@ void WaitEvent(TEventMask mask)
   
   TEventMask occurred = current->pending_events & mask;
   while ((occurred & mask) == 0) {
-    yield();
+    Yield();
     occurred = current->pending_events & mask;
   }
 

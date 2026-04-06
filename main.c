@@ -1,42 +1,47 @@
-#include "sys.h"
-#include "rtos_api.h"
-
-#include <unistd.h> // Функция sleep. Чисто для примера.
+#include <stdarg.h>
 #include <stdio.h>
+#include "rtos_api.h"
+#include "sys.h"
 
-DeclareTask(Sample);
+DeclareTask(Setupper);
 DeclareTask(Counter);
+DeclareTask(Printer);
 DeclareTask(Killer);
 
-DeclareEvent(ShuttingDown);
+DeclareEvent(EV_ShuttingDown);
 
-int main(void)
-{
-	StartOS(Sample);
-	return 0;
+int main(void) {
+  EnableLogging = 0;
+  StartOS(Setupper);
+  return 0;
 }
 
-TASK(Sample, 2) {
-	ActivateTask(Counter);
-	ActivateTask(Killer);
-	TerminateTask();
+TASK(Setupper, 2) {
+  ActivateTask(Counter);
+  ActivateTask(Printer);
+  ActivateTask(Killer);
+  TerminateTask();
 }
 
 TASK(Counter, 1) {
-	int counter = 0;
-	while (counter < 5) {
-		sleep(1);
-		printf("Counter: %d\n", counter);
-		// Эта функция не входит в api, поэтому её в тестах упоминать не надо.
-		// Я здесь просто показываю, как можно "ждать" с помощью yield.
-		yield();
-		counter += 1;
-	}
-	SetEvent(Killer, ShuttingDown);
-	TerminateTask(); // Не забывайте в конце каждой таски.
+  int counter = 0;
+  while (counter < 5) {
+    counter += 1;
+    Yield();
+  }
+  SetEvent(Killer, EV_ShuttingDown);
+  TerminateTask();  // Не забывайте в конце каждой таски.
+}
+
+TASK(Printer, 1) {
+  while (1) {
+    printf("Printing!\n");
+    Yield();
+  }  // Я думаю понятно, почему тут нету TerminateTask
 }
 
 TASK(Killer, 3) {
-	WaitEvent(ShuttingDown);
-	ShutdownOS(); // Ну это исключение. После Shutdown можно таску и не завершать.
+  WaitEvent(EV_ShuttingDown);
+  ShutdownOS();  // Ну это исключение. После Shutdown можно таску и не
+                 // завершать.
 }
