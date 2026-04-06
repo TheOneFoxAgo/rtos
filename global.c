@@ -1,12 +1,9 @@
+#include "data.h"
+#include "rtos_api.h"
+
 // Помещайте сюда только общие глобальные переменные. Не общие
 // сложите в свои единицы трасляции (и отметьте как static)
-// Если таких не окажется, а скорее всего так и будет, то
-// удалите этот файлик к чертям. Он никому нафиг не упёрся.
-// Сейчас в нём, закономерно, находится только наследие
-// windows_rtos.
 
-#include "sys.h"
+TTask CurrentTask;
 
-TResource ResourceQueue[MAX_RES];
-
-int FreeResource;
+int EnableLogging;

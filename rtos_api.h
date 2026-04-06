@@ -45,11 +45,7 @@ int StartOS(TTask task);
 // Завершить работу ОС. Все ждущие задачи будут сняты без предупреждения.
 noreturn void ShutdownOS(void);
 
-// Наследие Windows RTOS. У этих функций кста интерфейс кривой,
-// поскольку макросы чёрт знает как написаны. Можно написать нормально,
-// но во-первых, я ресурсами не занимаюсь, а во-вторых, у нас ваще семафоры,
-// а не ресурсы.
-void GetResource(int priority, char* name);
-void ReleaseResource(int priority, char* name);
+// Включить логирование.
+extern int EnableLogging;
 
 #endif

@@ -1,32 +1,37 @@
-#include "sys.h"
-#include "rtos_api.h"
-
-#include <unistd.h> // Функция sleep. Чисто для примера.
+#include <stdarg.h>
 #include <stdio.h>
+#include "rtos_api.h"
+#include "sys.h"
 
 DeclareTask(Counter);
+DeclareTask(Printer);
 DeclareTask(Killer);
 
-int main(void)
-{
-	StartOS(Counter);
-	return 0;
+int main(void) {
+  EnableLogging = 0;
+  StartOS(Counter);
+  return 0;
 }
 
 TASK(Counter, 1) {
-	int counter = 0;
-	while (counter < 5) {
-		sleep(1);
-		printf("Counter: %d\n", counter);
-		// Эта функция не входит в api, поэтому её в тестах упоминать не надо.
-		// Я здесь просто показываю, как можно "ждать" с помощью yield.
-		yield();
-		counter += 1;
-	}
-	ActivateTask(Killer);
-	TerminateTask(); // Не забывайте в конце каждой таски.
+  int counter = 0;
+  ActivateTask(Printer);
+  while (counter < 5) {
+    counter += 1;
+    Yield();
+  }
+  ActivateTask(Killer);
+  TerminateTask();  // Не забывайте в конце каждой таски.
+}
+
+TASK(Printer, 1) {
+  while (1) {
+    printf("Printing!\n");
+    Yield();
+  }  // Я думаю понятно, почему тут нету TerminateTask
 }
 
 TASK(Killer, 3) {
-	ShutdownOS(); // Ну это исключение. После Shutdown можно таску и не завершать.
+  ShutdownOS();  // Ну это исключение. После Shutdown можно таску и не
+                 // завершать.
 }

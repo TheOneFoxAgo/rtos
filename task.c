@@ -1,4 +1,5 @@
 #include <setjmp.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -9,55 +10,62 @@
 #include "sys.h"
 // Кишки планировщика задач. Тут треш и угар.
 
-static TTask CurrentTask;                 // Исполняемая в данный момент задача
-static size_t CurrentPriority;            // Приоритет исполняемой задачи
-static jmp_buf Scheduler;                 // Контекст планировщика.
+static size_t PriorityCounterAnchor;  // Значение счётчика для новых задач
+static jmp_buf Scheduler;             // Контекст планировщика.
+
+static size_t CurrentPriority;  // Приоритет текущей задачи.
+
 static TTask TasksHeads[MAX_PRIORITIES];  // Массив начал списков задач.
-static TTask TasksTails[MAX_PRIORITIES];  // Массив концов списков.
-// Волшебная функция. Скорее черная магия.
-// 1 аргумент - указатель на новый стек.
-// 2 аргумент - указатель на функцию, которую вызовем. С новым стеком.
-extern noreturn void StackSwitch(void* stack, void (*function)(void));
+static TTask TasksTails[MAX_PRIORITIES];  // Массив концов списков задач.
 
 enum SchedulerSignal {
   SCHEDULER_INIT = 0,
-  SCHEDULER_PICK_NEXT,   // Выполнить следующую задачу
-  SCHEDULER_TERMINATE_TASK,  // Завершить текущую задачу
-  SCHEDULER_EXIT,            // Выйти из планировщика
+  SCHEDULER_PICK_NEXT,          // Выполнить следующую задачу
+  SCHEDULER_TERMINATE_CURRENT,  // Завершить текущую задачу
+  SCHEDULER_EXIT,               // Выйти из планировщика
 };
 
-void yield(void) {
+void Yield(void) {
   if (setjmp(CurrentTask->ctx) == 0) {
     longjmp(Scheduler, SCHEDULER_PICK_NEXT);
   }
 }
 
-void PushToEnd(TTask task, size_t priority) {
-  TTask tail = TasksTails[priority];
-  if (tail != NULL) {
-    tail->next = task;
-  } else {
+// Волшебная функция. Скорее черная магия.
+// 1 аргумент - указатель на новый стек.
+// 2 аргумент - указатель на функцию, которую вызовем. С новым стеком.
+extern noreturn void StackSwitch(void* stack, void (*function)(void));
+
+// Вставить в конец очереди задач. Если next не null - уб
+static void Push(TTask task, size_t priority) {
+  if (TasksTails[priority] == NULL) {
     TasksHeads[priority] = task;
+  } else {
+    TasksTails[priority]->next = task;
   }
   TasksTails[priority] = task;
 }
 
-void PickNext(void) {
-  for (size_t i = 0; i < MAX_PRIORITIES; ++i) {
-    TTask task = TasksHeads[i];
-    if (CurrentTask == NULL) {
-      CurrentTask = task;
-      CurrentPriority = i;
-    } else if (task != NULL && task->priority < CurrentTask->priority) {
-      CurrentTask = task;
-      CurrentPriority = i;
-      break;
-    }
+// Вытащить задачу из очереди. Если очередь пуста - Уб.
+static TTask Pop(size_t priority) {
+  TTask previous_head = TasksHeads[priority];
+  if (previous_head->next == NULL) {
+    TasksTails[priority] = NULL;
+  }
+  TasksHeads[priority] = previous_head->next;
+  previous_head->next = NULL;
+  return previous_head;
+}
+
+// Прокрутить очередь вперёд.
+static void Cycle(size_t priority) {
+  if (TasksHeads[priority] != TasksTails[priority]) {
+    Push(Pop(priority), priority);
   }
 }
 
 // Сбрасываем задачу в изначальное состояние и освобождаем ресурсы
-void ResetTask(TTask task, size_t priority) {
+static void ClearTask(TTask task, size_t priority) {
   task->status = TASK_START;
   task->priority = priority;
   task->next = NULL;
@@ -66,7 +74,7 @@ void ResetTask(TTask task, size_t priority) {
 }
 
 // Увеличиваем счётчик времени
-void IncreaseTimeCounter(TTask task, size_t priority) {
+static void IncreaseTimeCounter(TTask task, size_t priority) {
   // Сбрасываем все счётчики, если хотя б кто-то
   // близко подобрался. Уроки Касилова пошли на пользу
   if (SIZE_MAX - 1 - priority <= task->priority) {
@@ -77,9 +85,31 @@ void IncreaseTimeCounter(TTask task, size_t priority) {
         task = task->next;
       }
     }
+    PriorityCounterAnchor = 0;
   } else {
     task->priority += 1 + priority;
+    PriorityCounterAnchor = task->priority;
   }
+}
+
+// Выбирает следующую задачу и приоритет.
+// Выбранная задача гарантированно на вершине очереди.
+static TTask PickNext(size_t* out_priority) {
+  TTask best = NULL;
+  size_t priority = 0;
+  for (size_t i = 0; i < MAX_PRIORITIES; ++i) {
+    TTask task = TasksHeads[i];
+    if (best == NULL) {
+      best = task;
+      priority = i;
+    } else if (task != NULL && task->priority < best->priority) {
+      best = task;
+      priority = i;
+      break;
+    }
+  }
+  *out_priority = priority;
+  return best;
 }
 
 // Начать исполнение задач.
@@ -87,46 +117,57 @@ void IncreaseTimeCounter(TTask task, size_t priority) {
 void StartScheduler(void) {
   Log("Scheduler start\n");
   switch (setjmp(Scheduler)) {
-    case SCHEDULER_TERMINATE_TASK: {
-      ResetTask(CurrentTask, CurrentPriority);
-      Log("%s is terminated\n", CurrentTask->name);
+    case SCHEDULER_TERMINATE_CURRENT: {
+      // Гарантированно CurrentTask находится на вершине списка
+      // Pop() нарушит эту гарантию только временно. Скоро восстановим.
+      ClearTask(Pop(CurrentPriority), CurrentPriority);
+      Log("Task %s is terminated\n", CurrentTask->name);
+      // Обнуляем, чтобы дать понять, что не надо крутить очередь
       CurrentTask = NULL;
     }  // Умышленно нету break
     case SCHEDULER_INIT:
     case SCHEDULER_PICK_NEXT: {
       if (CurrentTask != NULL) {
-        PushToEnd(CurrentTask, CurrentPriority);
+        // Таску не выключили, а значит надо её отправить в конец.
+        Cycle(CurrentPriority);
       }
-      PickNext();
-      if (CurrentTask != NULL) {
+      // Восстанавливаем гарантию, что CurrentTask всегда в начале своего
+      // списка.
+      CurrentTask = PickNext(&CurrentPriority);
+      if (CurrentTask != NULL) {  // Если вернули NULL, значит задачи кончились.
         IncreaseTimeCounter(CurrentTask, CurrentPriority);
-        TasksHeads[CurrentPriority] = CurrentTask->next;
         if (CurrentTask->status == TASK_START) {
           Log("Starting task: %s\n", CurrentTask->name);
           CurrentTask->status = TASK_REENTER;
           CurrentTask->stack = malloc(STACK_SIZE);
-          StackSwitch(CurrentTask->stack + STACK_SIZE, CurrentTask->body);
+          // Стек растёт вниз, поэтому отдаём конец стека, а не начало
+          StackSwitch(CurrentTask->stack + STACK_SIZE - 1, CurrentTask->body);
         } else {
           Log("Reentering task: %s\n", CurrentTask->name);
-          longjmp(CurrentTask->ctx, 1); // Число ни на что не влияет.
+          longjmp(CurrentTask->ctx, 1);  // Число ни на что не влияет.
         }
       }
     } break;
     case SCHEDULER_EXIT: {
       Log("Scheduler cleanup\n");
-      // Очищаем всё что осталось.
+      // Очищаем стеки, чтобы не было утечек.
       for (size_t i = 0; i < MAX_PRIORITIES; ++i) {
         TTask task = TasksHeads[i];
         while (task != NULL) {
+          Log("Force Terminating task: %s\n", task->name);
           TTask next = task->next;
-          ResetTask(task, i);
+          ClearTask(task, i);
           task = next;
         }
-        TasksHeads[i] = NULL;
-        TasksTails[i] = NULL;
       }
     } break;
   };
+  for (size_t i = 0; i < MAX_PRIORITIES; ++i) {
+    TasksHeads[i] = NULL;
+    TasksTails[i] = NULL;
+  }
+  PriorityCounterAnchor = 0;
+  CurrentTask = NULL;
   Log("Scheduler exited\n");
 }
 
@@ -138,19 +179,16 @@ void ActivateTask(TTask task) {
   Log("Activating task: %s\n", task->name);
   task->status = TASK_START;
   int priority = task->priority;
-  PushToEnd(task, priority);
+  Push(task, priority);
   // Когда задачу приняли, это поле начинает использоваться
   // как счётчик процессорного времени
-  task->priority = 0;
+  task->priority = PriorityCounterAnchor;
   Log("Task %s is activated\n", task->name);
 }
 
 noreturn void TerminateTask(void) {
-  // Как ни странно, нельзя очищать стек функции прямо здесь,
-  // потому что мы пока, мы в этом стеке и находимся.
-  // Если очистим - моментальное уб. Поэтому прыгаем в планировщик.
-  // Он находится в другом стеке, и поэтому может спокойно
-  // очистить этот.
-  Log("Begin %s termination\n", CurrentTask->name);
-  longjmp(Scheduler, SCHEDULER_TERMINATE_TASK);
+  // Нельзя прямо здесь очищать стек задачи, потому что
+  // мы пока именно в нём и находимся. Надо прыгать в планировщик.
+  Log("Begin task %s termination\n", CurrentTask->name);
+  longjmp(Scheduler, SCHEDULER_TERMINATE_CURRENT);
 }
