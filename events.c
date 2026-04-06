@@ -4,16 +4,6 @@
 #include "rtos_api.h"
 #include "sys.h"
 
-TEventMask __GenNewEventMask()
-{
-  static int eventCounter = 0;
-  if (eventCounter >= MAX_EVENTS) {
-    return EMPTY_MASK;
-  }
-  
-  return (TEventMask)(1 << (eventCounter++));
-}
-
 void SetEvent(TTask task, TEventMask mask)
 {
   if (task == NULL || mask == EMPTY_MASK) return;

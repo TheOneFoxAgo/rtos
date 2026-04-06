@@ -5,6 +5,7 @@ add_library(${PROJECT_NAME} STATIC
     os.c
     global.c
     task.c
+    events.c
     linux-x86-64.s
 )
 

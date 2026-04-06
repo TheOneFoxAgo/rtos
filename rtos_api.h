@@ -50,7 +50,7 @@ TEventMask __GenNewEventMask(void);
 
 // Регистрирует событие и создаёт константу с уникальным битом в маске
 #define DeclareEvent(EventID) \
-  static TEventMask EventID = __GenNewEventMask()
+  static const TEventMask EventID = (TEventMask)(1 << __COUNTER__)
 
 // Устанавливает для указанной задачи события, задаваемые маской.
 // Любые события, не заданные в маске, останутся неизменны.
