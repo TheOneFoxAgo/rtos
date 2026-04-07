@@ -1,5 +1,6 @@
 ### Build files ###
-**/build/
+**/release/
+**/debug/
 
 ### VS Code ###
 **/.vscode/

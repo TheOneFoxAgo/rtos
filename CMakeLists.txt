@@ -4,6 +4,7 @@ project(rtos LANGUAGES C ASM)
 add_library(${PROJECT_NAME} STATIC
     os.c
     global.c
+    resource.c
     task.c
     events.c
     linux-x86-64.s

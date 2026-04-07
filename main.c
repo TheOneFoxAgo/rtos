@@ -11,8 +11,8 @@ DeclareTask(Killer);
 DeclareEvent(EV_ShuttingDown);
 
 int main(void) {
-  EnableLogging = 0;
-  StartOS(Setupper);
+  EnableLogging = 1;
+  StartOS(Counter);
   return 0;
 }
 
@@ -24,12 +24,14 @@ TASK(Setupper, 2) {
 }
 
 TASK(Counter, 1) {
+  Log("Starting counter!\n");
   int counter = 0;
   while (counter < 5) {
     counter += 1;
     Yield();
   }
-  SetEvent(Killer, EV_ShuttingDown);
+  ActivateTask(Killer);
+  // SetEvent(Killer, EV_ShuttingDown);
   TerminateTask();  // Не забывайте в конце каждой таски.
 }
 
@@ -41,7 +43,7 @@ TASK(Printer, 1) {
 }
 
 TASK(Killer, 3) {
-  WaitEvent(EV_ShuttingDown);
+  // WaitEvent(EV_ShuttingDown);
   ShutdownOS();  // Ну это исключение. После Shutdown можно таску и не
                  // завершать.
 }
