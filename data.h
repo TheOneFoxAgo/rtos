@@ -32,4 +32,14 @@ struct TaskStorage {
 
 typedef struct TaskStorage* TTask;
 
+// Простой семафор (P/V).
+// wait_head/wait_tail — FIFO-очередь задач, ожидающих освобождения.
+struct SemaphoreStorage {
+  int count;               // Счётчик: > 0 — свободен, 0 — занят
+  TTask wait_head;         // Первая задача в очереди ожидающих
+  TTask wait_tail;         // Последняя задача в очереди ожидающих
+};
+
+typedef struct SemaphoreStorage* TSemaphore;
+
 #endif
