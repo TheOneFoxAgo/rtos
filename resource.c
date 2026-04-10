@@ -1,6 +1,6 @@
 #include <stddef.h>
 #include "data.h"
-#include "defs.h"
+#include "logging.h"
 #include "rtos_api.h"
 #include "sys.h"
 
@@ -18,7 +18,8 @@ static void SemPush(TSemaphore s, TTask task) {
 // Извлечь задачу из начала очереди ожидающих семафора
 static TTask SemPop(TSemaphore s) {
   TTask task = s->wait_head;
-  if (task == NULL) return NULL;
+  if (task == NULL)
+    return NULL;
   s->wait_head = task->next;
   if (s->wait_head == NULL) {
     s->wait_tail = NULL;
@@ -28,7 +29,8 @@ static TTask SemPop(TSemaphore s) {
 }
 
 void InitPVS(TSemaphore s, int count) {
-  if (s == NULL) return;
+  if (s == NULL)
+    return;
   s->count = count;
   s->wait_head = NULL;
   s->wait_tail = NULL;
@@ -36,9 +38,10 @@ void InitPVS(TSemaphore s, int count) {
 }
 
 void P(TSemaphore s) {
-  if (s == NULL) return;
-  Log("P: task=%s tries to acquire semaphore (count=%d)\n",
-      CurrentTask->name, s->count);
+  if (s == NULL)
+    return;
+  Log("P: task=%s tries to acquire semaphore (count=%d)\n", CurrentTask->name,
+      s->count);
 
   while (s->count == 0) {
     Log("P: task=%s blocked on semaphore\n", CurrentTask->name);
@@ -47,21 +50,22 @@ void P(TSemaphore s) {
   }
 
   s->count--;
-  Log("P: task=%s acquired semaphore (count now=%d)\n",
-      CurrentTask->name, s->count);
+  Log("P: task=%s acquired semaphore (count now=%d)\n", CurrentTask->name,
+      s->count);
 }
 
 void V(TSemaphore s) {
-  if (s == NULL) return;
+  if (s == NULL)
+    return;
 
   TTask waiter = SemPop(s);
   if (waiter != NULL) {
-    Log("V: task=%s releases semaphore, waking task=%s\n",
-        CurrentTask->name, waiter->name);
+    Log("V: task=%s releases semaphore, waking task=%s\n", CurrentTask->name,
+        waiter->name);
     ActivateTask(waiter);
   } else {
     s->count++;
-    Log("V: task=%s releases semaphore (count now=%d)\n",
-        CurrentTask->name, s->count);
+    Log("V: task=%s releases semaphore (count now=%d)\n", CurrentTask->name,
+        s->count);
   }
 }

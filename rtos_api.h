@@ -1,7 +1,6 @@
 #ifndef RTOS_API_H
 #define RTOS_API_H
 
-#include <stdnoreturn.h>
 #include "data.h"
 
 // Включить логирование.
@@ -27,7 +26,7 @@ extern int EnableLogging;
       prior,                                  \
   };                                          \
   TTask TaskID = &__##TaskID##_storage;       \
-  noreturn void __##TaskID##_body(void)
+  void __##TaskID##_body(void)
 
 // Активировать задачу.
 // Сразу же поставит задачу в очередь на исполнение.
@@ -37,13 +36,13 @@ void ActivateTask(TTask);
 // Завершить задачу.
 // Уберёт задачу из очереди. Когда-нибудь. Никаких гарантий не даю.
 // ОБЯЗАТЕЛЬНО ВЫЗЫВАЙТЕ В КОНЦЕ ЗАДАЧИ! Забудете - всё. Уб.
-noreturn void TerminateTask(void);
+void TerminateTask(void);
 
 // Запустить ОС начав с задачи task.
 int StartOS(TTask);
 
 // Завершить работу ОС. Все ждущие задачи будут сняты без предупреждения.
-noreturn void ShutdownOS(void);
+void ShutdownOS(void);
 
 // Внутренняя функция регистрации события (не для прямого вызова)
 TEventMask __GenNewEventMask(void);

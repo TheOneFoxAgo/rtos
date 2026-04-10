@@ -1,6 +1,5 @@
 #include <stdarg.h>
-#include <stdio.h>
-#include <stdnoreturn.h>
+#include "logging.h"
 #include "rtos_api.h"
 #include "sys.h"
 
@@ -13,18 +12,7 @@ int StartOS(TTask task) {
   return 0;
 }
 
-noreturn void ShutdownOS() {
+void ShutdownOS() {
   Log("Begin OS Shutdown.\n");
   ShutDownScheduler();
-}
-
-int Log(const char* format, ...) {
-  int res = 0;
-  if (EnableLogging) {
-    va_list args;
-    va_start(args, format);
-    res = vfprintf(stderr, format, args);
-    va_end(args);
-  }
-  return res;
 }

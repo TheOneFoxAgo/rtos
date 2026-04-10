@@ -1,7 +1,6 @@
 #ifndef SYS_H
 #define SYS_H
 
-#include <stdnoreturn.h>
 #include "data.h"
 // Общие функции нашей OS, которые не входят во внешее api.
 
@@ -10,7 +9,7 @@ void StartScheduler(void);
 
 // Выключить планировщик. Эта функция - волшебная. Запустите её,
 // и моментально окажетесь на строчке сразу после StartScheduler.
-noreturn void ShutDownScheduler(void);
+void ShutDownScheduler(void);
 
 // "Отпустить" процессор, чтобы можно было выполнять другие задачи.
 // Вызывайте, когда планируете ждать чего либо. Управление к вам
@@ -18,9 +17,6 @@ noreturn void ShutDownScheduler(void);
 // Типичный юзкейс: while(условие) yield();
 // Эта функция тоже волшебная.
 void Yield(void);
-
-// Местная функция логирования.
-int Log(const char* format, ...);
 
 // Задача, которую сейчас мучает планировщик.
 // Если попробуете поменять вручную, то смэрть.

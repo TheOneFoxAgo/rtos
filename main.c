@@ -24,7 +24,7 @@ TASK(Setupper, 2) {
 }
 
 TASK(Counter, 1) {
-  Log("Starting counter!\n");
+  printf("Starting counter!\n");
   int counter = 0;
   while (counter < 5) {
     counter += 1;

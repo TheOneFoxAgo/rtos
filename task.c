@@ -2,9 +2,9 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdnoreturn.h>
 #include "data.h"
 #include "defs.h"
+#include "logging.h"
 #include "rtos_api.h"
 #include "sys.h"
 // Кишки планировщика задач. Тут треш и угар.
@@ -34,7 +34,7 @@ extern void Warp(void* stack, void** old_stack, void (*function)(void));
 
 // 1 - Старый стек
 // Эта функция благословлена Императором человечества
-extern noreturn void Recall(void* stack);
+extern void Recall(void* stack);
 
 // 1 - Новый стек
 // 2 - Указатель на указатель на старый стек
@@ -189,7 +189,7 @@ void StartScheduler(void) {
   Log("Scheduler exited\n");
 }
 
-noreturn void ShutDownScheduler(void) {
+void ShutDownScheduler(void) {
   SchedulerExit = true;
   Recall(SchedulerStack);
 }
@@ -205,7 +205,7 @@ void ActivateTask(TTask task) {
   Log("Task %s is activated\n", task->name);
 }
 
-noreturn void TerminateTask(void) {
+void TerminateTask(void) {
   // Нельзя прямо здесь очищать стек задачи, потому что
   // мы пока именно в нём и находимся. Надо прыгать в планировщик.
   Log("Begin task %s termination\n", CurrentTask->name);
