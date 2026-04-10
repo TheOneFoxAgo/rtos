@@ -1,3 +1,5 @@
+#define DEBUG  // Штоб печатало
+
 #include <stdarg.h>
 #include <stdio.h>
 #include "rtos_api.h"
@@ -11,7 +13,6 @@ DeclareTask(Killer);
 DeclareEvent(EV_ShuttingDown);
 
 int main(void) {
-  EnableLogging = 1;
   StartOS(Counter);
   return 0;
 }

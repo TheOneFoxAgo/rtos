@@ -1,6 +1,7 @@
 #ifndef SYS_H
 #define SYS_H
 
+#include <stddef.h>
 #include "data.h"
 // Общие функции нашей OS, которые не входят во внешее api.
 
@@ -21,5 +22,10 @@ void Yield(void);
 // Задача, которую сейчас мучает планировщик.
 // Если попробуете поменять вручную, то смэрть.
 extern TTask CurrentTask;
+
+// Приоритет текущей задачи.
+// Нужен, поскольку поле priority активно используется
+// планировщиком в своих чёрных целях
+extern size_t CurrentTaskPriority;
 
 #endif
