@@ -2,9 +2,5 @@
 
 Тактика-галактика такая:
 ```
-mkdir build
-cd build
-cmake ..
-make
-./test
+./build.sh и в папке bin появляется бинарник
 ```
