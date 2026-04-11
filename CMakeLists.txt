@@ -16,3 +16,4 @@ target_sources(${PROJECT_NAME} PRIVATE
     linux-x86-64.s
 )
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG)
