@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.10)
 project(rtos LANGUAGES C ASM)
 
-add_library(${PROJECT_NAME} STATIC
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+
+add_executable(${PROJECT_NAME} main.c)
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
+
+target_sources(${PROJECT_NAME} PRIVATE
     os.c
     global.c
     resource.c
@@ -10,9 +16,3 @@ add_library(${PROJECT_NAME} STATIC
     linux-x86-64.s
 )
 
-add_executable(test main.c)
-
-target_link_libraries(test PRIVATE ${PROJECT_NAME})
-
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
-target_include_directories(test PRIVATE ${CMAKE_SOURCE_DIR})
