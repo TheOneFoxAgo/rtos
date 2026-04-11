@@ -1,7 +1,7 @@
 #define DEBUG
-
 #include <stdarg.h>
 #include <stdio.h>
+#include <unistd.h>
 #include "rtos_api.h"
 #include "sys.h"
 
@@ -19,13 +19,41 @@ TSemaphore sem_print_signal_var;
 TSemaphore SEM_PrintMutex = (TSemaphore)&sem_print_mutex_var;
 TSemaphore SEM_PrintSignal = (TSemaphore)&sem_print_signal_var;
 
+// Функции безопасной печати
+void safe_print(const char* str) {
+    while (*str) {
+        write(STDOUT_FILENO, str, 1);
+        str++;
+    }
+}
+
+void safe_print_int(int num) {
+    char buf[32];
+    int i = 0;
+    
+    if (num == 0) {
+        safe_print("0");
+        return;
+    }
+    
+    int temp = num;
+    while (temp > 0) {
+        buf[i++] = '0' + (temp % 10);
+        temp /= 10;
+    }
+    
+    while (i > 0) {
+        write(STDOUT_FILENO, &buf[--i], 1);
+    }
+}
+
 int main(void) {
     StartOS(Counter);
     return 0;
 }
 
 TASK(Setupper, 2) {
-    printf("=== System Starting ===\n");
+    safe_print("=== System Starting ===\n");
     
     // Инициализация семафоров
     InitPVS(SEM_PrintMutex, 1);   // Мьютекс (свободен)
@@ -40,13 +68,16 @@ TASK(Setupper, 2) {
 }
 
 TASK(Counter, 1) {
-    printf("Counter: started\n");
+    safe_print("Counter: started\n");
+    safe_print("Counter: started\n");
     
     int counter = 0;
     while (counter < 5) {
         counter++;
-        printf("Counter: iteration %d/5\n", counter);
-        
+        safe_print("Counter: iteration ");
+        safe_print_int(counter);
+        safe_print("/5\n");
+
         // Даем сигнал Printer'у через семафор (разблокирует Printer)
         V(SEM_PrintSignal);
         
@@ -54,7 +85,7 @@ TASK(Counter, 1) {
         for (volatile int i = 0; i < 100000; i++);
     }
     
-    printf("Counter: finished all iterations\n");
+    safe_print("Counter: finished all iterations\n");
     
     // Устанавливаем событие завершения для Killer
     SetEvent(Killer, EV_CounterDone);
@@ -64,7 +95,7 @@ TASK(Counter, 1) {
 }
 
 TASK(Printer, 1) {
-    printf("Printer: started, waiting for signals...\n");
+    safe_print("Printer: started, waiting for signals...\n");
     
     for (int i = 0; i < 5; i++) {
         // БЛОКИРУЮЩИЙ вызов - ждет сигнала от Counter
@@ -73,26 +104,29 @@ TASK(Printer, 1) {
         
         // Критическая секция (печать)
         P(SEM_PrintMutex);
-        printf("Printer: Printing message %d/5!\n", i + 1);
+        safe_print("Printer: Printing message ");
+        safe_print_int(i + 1);
+        safe_print("/5!\n");
         V(SEM_PrintMutex);
     }
     
-    printf("Printer: finished all prints\n");
+    safe_print("Printer: finished all prints\n");
     
-  while (1) {
-    printf("Printing!\n");
-    Yield();
-  }
+    while (1) {
+        safe_print("Printing!\n");
+        Yield();
+    }
 }
 
 TASK(Killer, 3) {
-    printf("Killer: waiting for counter completion event...\n");
+    safe_print("Killer: waiting for counter completion event...\n");
     
+    for (volatile int i = 0; i < 1000000; i++);
     // БЛОКИРУЮЩИЙ вызов - ждет события от Counter
     // Не использует Yield! Планировщик сам переключит контекст
     WaitEvent(EV_CounterDone);
-    
-    printf("Killer: shutdown signal received, shutting down OS...\n");
+
+    safe_print("Killer: shutdown signal received, shutting down OS...\n");
     ShutdownOS();
     
     while(1); // Никогда не выполнится
