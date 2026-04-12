@@ -7,6 +7,14 @@
 .global Warp
 Warp:
         push rbp       # Сохраняем базу стека
+        push rsi
+        push rdi
+        push rbx
+        push r12
+        push r13
+        push r14
+        push r15
+
         mov [rdx], rsp # Сохраняем старый стек
         and rcx, -16   # Выравниваем стек
         mov rbp, rcx   # Меняем базу стека на новый
@@ -18,6 +26,15 @@ Warp:
 .global Recall
 Recall:
         mov rsp, rcx   # Меняем стек на старый
+
+        
+        pop r15
+        pop r14
+        pop r13
+        pop r12
+        pop rbx
+        pop rdi
+        pop rsi
         pop rbp        # На вершине сидит база стека
         ret
 
@@ -26,7 +43,23 @@ Recall:
 .global Reenter
 Reenter:
         push rbp       # Пушим на старый стек
+        push rsi
+        push rdi
+        push rbx
+        push r12
+        push r13
+        push r14
+        push r15
+
         mov [rdx], rsp # Сохраняем старый стек
         mov rsp, rcx   # Меняем стек на новый
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
+        pop rbx
+        pop rdi
+        pop rsi
         pop rbp        # Восстанавливаем базу стека
         ret

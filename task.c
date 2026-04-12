@@ -80,6 +80,7 @@ static void ClearTask(TTask task, size_t priority) {
   free(task->mem);
   task->stack = NULL;
   task->mem = NULL;
+  task->pending_events = 0;
 }
 
 // Увеличиваем счётчик времени
