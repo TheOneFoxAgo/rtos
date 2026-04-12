@@ -161,11 +161,7 @@ void StartScheduler(void) {
       ClearTask(Pop(CurrentTaskPriority), CurrentTaskPriority);
       Log("Task %s is terminated\n", CurrentTask->name);
       // Обнуляем, чтобы дать понять, что не надо крутить очередь
-//      CurrentTask = NULL;
-    }
-    CurrentTask = PickNext(&CurrentTaskPriority);
-    if (CurrentTask == NULL) {
-        break;  // Нет задач - выходим
+      CurrentTask = NULL;
     }
   }
   if (SchedulerExit) {
@@ -208,14 +204,6 @@ void ActivateTask(TTask task) {
 }
 
 void TerminateTask(void) {
-    if (CurrentTask == NULL) {
-        return;  // Уже нечего завершать
-    }
-    
-    // Если задача уже завершается или завершена - игнорируем
-    if (CurrentTask->status == TASK_TERMINATE) {
-        return;  // Уже завершается
-    }
   // Нельзя прямо здесь очищать стек задачи, потому что
   // мы пока именно в нём и находимся. Надо прыгать в планировщик.
   Log("Begin task %s termination\n", CurrentTask->name);
