@@ -1,5 +1,4 @@
 #include <stdarg.h>
-
 #include <stdio.h>
 #include "rtos_api.h"
 #include "sys.h"
