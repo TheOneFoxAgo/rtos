@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(rtos LANGUAGES C ASM)
 
+option(ENABLE_DEBUG_LOG "Debug log" OFF)
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
 add_executable(${PROJECT_NAME} main.c)
@@ -16,4 +18,6 @@ target_sources(${PROJECT_NAME} PRIVATE
     linux-x86-64.s
 )
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG)
+if (ENABLE_DEBUG_LOG)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG)
+endif()

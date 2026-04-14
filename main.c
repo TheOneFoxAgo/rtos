@@ -18,7 +18,8 @@ DeclareTask(Task5);
 DeclareTask(Task6);
 DeclareTask(Task7);
 DeclareTask(Task8);
-// DeclareTask(Task9);
+DeclareTask(Task9);
+DeclareTask(Helper);
 DeclareTask(Task10);
 DeclareTask(Watchdog);
 
@@ -149,15 +150,25 @@ TASK(Task6, 1) {
 /*********************************/
 /* Сценарий 3: повторная активация задачи */
 /*********************************/
-// TASK(Task9, 1) {
-//   printf("Starting Task9...\n");
-//   printf("Task9 intentionally performs repeated activation\n");
+TASK(Task9, 1) {
+  static int counter = 0;
+  ++counter;
+  printf("Starting Task9...\n");
+  printf("Task9 intentionally performs repeated activation\n");
 
-//   ActivateTask(Task9);
+  if (counter < 3)
+    ActivateTask(Helper);
 
-//   TerminateTask();
-// }
+  TerminateTask();
+}
 
+TASK(Helper, 0) {
+  printf("Starting Helper...\n");
+
+  ActivateTask(Task9);
+
+  TerminateTask();
+}
 /*********************************/
 /* Сценарий 4: освобождение чужого семафора */
 /*********************************/
@@ -227,10 +238,10 @@ void RunScenario(int scenario) {
       StartOS(Task6);
       break;
     case 3:
-      // printf("==========================================\n");
-      // printf("SCENARIO 3: repeated activation error\n");
-      // printf("==========================================\n");
-      // StartOS(Task9);
+      printf("==========================================\n");
+      printf("SCENARIO 3: repeated activation\n");
+      printf("==========================================\n");
+      StartOS(Task9);
       break;
     case 4:
       printf("==========================================\n");
