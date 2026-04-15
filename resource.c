@@ -1,71 +1,55 @@
 #include <stddef.h>
+#include <stdbool.h>
 #include "data.h"
 #include "logging.h"
 #include "rtos_api.h"
 #include "sys.h"
 
-// Добавить задачу в конец очереди ожидающих семафора
-static void SemPush(TSemaphore s, TTask task) {
-  task->next = NULL;
-  if (s->wait_tail == NULL) {
-    s->wait_head = task;
-  } else {
-    s->wait_tail->next = task;
-  }
-  s->wait_tail = task;
-}
 
-// Извлечь задачу из начала очереди ожидающих семафора
-static TTask SemPop(TSemaphore s) {
-  TTask task = s->wait_head;
-  if (task == NULL)
-    return NULL;
-  s->wait_head = task->next;
-  if (s->wait_head == NULL) {
-    s->wait_tail = NULL;
-  }
-  task->next = NULL;
-  return task;
-}
-
-void InitPVS(TSemaphore s, int count) {
-  if (s == NULL)
+void InitPVS(TSemaphore s) {
+  if (s == NULL) {
+    Log("InitPVS: NULL semaphore pointer\n");
     return;
-  s->count = count;
-  s->wait_head = NULL;
-  s->wait_tail = NULL;
-  Log("InitPVS: semaphore initialized, count=%d\n", count);
+  }
+  // Ресурс свободен.
+  s->locked = false;
+  Log("InitPVS: semaphore initialized. State: unlocked\n");
 }
 
 void P(TSemaphore s) {
-  if (s == NULL)
+  if (s == NULL) {
+    Log("P: NULL semaphore pointer\n");
     return;
-  Log("P: task=%s tries to acquire semaphore (count=%d)\n", CurrentTask->name,
-      s->count);
+  }
+  
+  Log("P: task=%s tries to acquire semaphore (state: %s)\n", 
+      CurrentTask ? CurrentTask->name : "unknown",
+      s->locked ? "locked" : "unlocked");
 
-  while (s->count == 0) {
-    Log("P: task=%s blocked on semaphore\n", CurrentTask->name);
-    SemPush(s, CurrentTask);
+  // Активное ожидание с Yield().
+  // Не трогаем внутренние поля планировщика.
+  while (s->locked) {
+    Log("P: task=%s spinning on semaphore\n", 
+        CurrentTask ? CurrentTask->name : "unknown");
     Yield();
   }
-
-  s->count--;
-  Log("P: task=%s acquired semaphore (count now=%d)\n", CurrentTask->name,
-      s->count);
+  
+  // Захват семафора.
+  s->locked = true;
+  
+  Log("P: task=%s acquired semaphore\n", 
+      CurrentTask ? CurrentTask->name : "unknown");
 }
 
 void V(TSemaphore s) {
-  if (s == NULL)
+  if (s == NULL) {
+    Log("V: NULL semaphore pointer\n");
     return;
-
-  TTask waiter = SemPop(s);
-  if (waiter != NULL) {
-    Log("V: task=%s releases semaphore, waking task=%s\n", CurrentTask->name,
-        waiter->name);
-    ActivateTask(waiter);
-  } else {
-    s->count++;
-    Log("V: task=%s releases semaphore (count now=%d)\n", CurrentTask->name,
-        s->count);
   }
+  
+  Log("V: task=%s releases semaphore\n", 
+      CurrentTask ? CurrentTask->name : "unknown");
+  
+  // Освобождение семафора.
+  s->locked = false;
 }
