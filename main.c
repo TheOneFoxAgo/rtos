@@ -34,8 +34,8 @@ DeclareEvent(EV_Event8);
 DeclareEvent(EV_Event9);
 DeclareEvent(EV_Event10);
 
-TSemaphore sem_test_var;
-TSemaphore SEM_Test = (TSemaphore)&sem_test_var;
+struct SemaphoreStorage sem_test_var;
+TSemaphore SEM_Test = &sem_test_var;
 void RunScenario(int i);
 int main(void) {
   StartOS(Counter);
@@ -223,7 +223,8 @@ void RunScenario(int scenario) {
           "SCENARIO 0: activation, scheduling, event wait and semaphore "
           "wakeup\n");
       printf("==========================================\n");
-      //            StartOS(Task1);
+      InitPVS(SEM_Test);
+      StartOS(Task1);
       break;
     case 1:
       printf("==========================================\n");
@@ -247,8 +248,8 @@ void RunScenario(int scenario) {
       printf("==========================================\n");
       printf("SCENARIO 4: wrong semaphore owner release\n");
       printf("==========================================\n");
-      //            InitPVS(SEM_Test, 1);
-      //            StartOS(Task7);
+      InitPVS(SEM_Test);
+      StartOS(Task7);
       break;
     case 5:
       printf("==========================================\n");
