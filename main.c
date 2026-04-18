@@ -205,14 +205,11 @@ TASK(Task10, 1) {
 
 TASK(Watchdog, 0) {  // Самый высокий приоритет
   // Подождать немного
-  for (volatile int i = 0; i < 10000000; i++)
-    ;
+  for (volatile int i = 0; i < 10000; i++)
+    Yield();
 
   printf("Watchdog: deadlock detected, forcing shutdown...\n");
   ShutdownOS();
-
-  while (1)
-    Yield();
 }
 
 void RunScenario(int scenario) {
